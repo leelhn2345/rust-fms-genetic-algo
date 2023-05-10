@@ -1,0 +1,5 @@
+{
+  "python.linting.enabled": false,
+  "python.languageServer": "None",
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"]
+}
