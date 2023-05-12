@@ -1,19 +1,14 @@
 use crate::config::DIST_UTILITY;
-use serde::Deserialize;
-use std::fs;
+use anyhow::Result;
 
-pub fn parse_map_json_data() {
-    println!("{DIST_UTILITY}");
-}
+use std::{collections::HashMap, fs};
 
-pub fn get_dist_utility() {
+pub fn get_dist_utility() -> Result<HashMap<String, HashMap<String, f32>>> {
     println!("parsing distance utility json file");
 
-    let contents = fs::read_to_string(DIST_UTILITY).expect("no such file exists");
+    let contents = fs::read_to_string(DIST_UTILITY)?;
 
-    // let json = serde_json::from_str(&contents).unwrap();
-    // println!("{}", json);
+    let json: HashMap<String, HashMap<String, f32>> = serde_json::from_str(&contents)?;
+
+    Ok(json)
 }
-
-#[derive(Deserialize)]
-struct DistUtility {}
