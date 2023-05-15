@@ -43,7 +43,7 @@ fn main() {
 
     let soln = optimizer.genetic_algo(robot_data, active_tasks, MUTATION_RATE, OFFSPRING_RATE);
 
-    println!("{:#?}", soln);
+    dbg!(soln);
 }
 fn divide_list(dividend: u8, divisor: u8) -> Vec<u8> {
     let quotient = dividend / divisor;
