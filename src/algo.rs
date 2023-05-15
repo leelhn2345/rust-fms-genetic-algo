@@ -23,7 +23,7 @@ impl Optimizer {
     }
 
     pub fn genetic_algo(
-        self,
+        &self,
         robot_data: HashMap<String, RobotData>,
         active_tasks: Vec<String>,
         mutation_rate: f32,
@@ -36,12 +36,41 @@ impl Optimizer {
     }
 
     fn init_soln(
-        self,
-        robot_data: HashMap<String, RobotData>,
-        active_tasks: Vec<String>,
+        &self,
+        mut robot_data: HashMap<String, RobotData>,
+        mut active_tasks: Vec<String>,
     ) -> Solution {
         let mut soln = robot_data.clone();
 
+        while !active_tasks.is_empty() {
+            for val in robot_data.values_mut() {
+                if let Some(task) = active_tasks.pop() {
+                    val.path.push(task)
+                }
+            }
+        }
+
+        for (robot, robot_info) in robot_data.iter() {
+            let veh_cap = robot_info.veh_cap;
+            let path = &robot_info.path;
+
+            if path.is_empty() {
+                soln.remove(robot);
+                continue;
+            }
+            let mut new_path: Vec<String> = vec![];
+
+            for (idx, node) in path.iter().enumerate() {
+                if idx % usize::from(veh_cap) == 0 {
+                    new_path.push(robot.into());
+                }
+                new_path.push(node.into());
+            }
+            if new_path.last().unwrap() != robot {
+                new_path.push(robot.into());
+            }
+            soln.get_mut(robot).unwrap().path = new_path;
+        }
         soln
     }
 }
