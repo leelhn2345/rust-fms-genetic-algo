@@ -26,6 +26,15 @@ management system, in **rust**.
         best solution, best utility
 ```
 
+## Review
+
+It was originally coded in python, and though the algorithm works, but it didn't
+work out as i had wanted to. no idea what is wrong.
+
+When
+[count_limit](https://github.com/leelhn2345/rust-fms-genetic-algo/blob/36c68af3cea9eaa10e60bf553a81238e67609c13/src/algo.rs#L67)
+nears 20, the code doesn't return any output. no idea why.
+
 ## Paper References
 
 1. Efficient genetic algorithms for optimal assignment of tasks to teams of agents

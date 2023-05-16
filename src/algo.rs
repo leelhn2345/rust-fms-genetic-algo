@@ -1,4 +1,4 @@
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{seq::SliceRandom, thread_rng, Rng};
 
 use crate::robot::RobotData;
 use std::collections::HashMap;
@@ -62,13 +62,39 @@ impl Optimizer {
             task_vec.push(new_tasks);
         });
 
-        let population = self.init_population(task_vec, &clean_soln);
+        let mut population = self.init_population(task_vec, &clean_soln);
 
-        let count_limit: u16 = 50;
+        let count_limit: u16 = 10;
+        let threshold_limit = 20;
         while count != count_limit {
             let mating_pool = self.selection(&population, num_offsprings);
-            let mut child_tasks = self.crossover(mating_pool);
+            let child_tasks = self.crossover(mating_pool);
             let child_tasks = self.mutation(child_tasks, mutation_rate);
+
+            let new_population = self.init_population(child_tasks, &clean_soln);
+            population.extend(new_population);
+
+            population.sort_by(|a, b| a.utility.cmp(&b.utility));
+            population.reverse();
+            population.shrink_to(self.candidate_num as usize);
+
+            let best_spec = population.first().unwrap();
+            let temp_soln = best_spec.soln.clone();
+            let temp_utility = best_spec.utility;
+
+            if temp_utility > best_cost {
+                best_cost = temp_utility;
+                best_soln = temp_soln;
+                threshold = 0;
+            }
+            // println!("round {count}");
+            // dbg!(&best_soln);
+            if temp_utility < best_cost {
+                threshold += 1;
+                if threshold >= threshold_limit {
+                    break;
+                }
+            }
             count += 1;
         }
         (best_soln, best_cost)
@@ -130,11 +156,61 @@ impl Optimizer {
     }
 
     fn crossover(&self, mating_pool: Vec<Population>) -> Vec<Vec<String>> {
-        todo!()
+        let mut child_tasks: Vec<Vec<String>> = vec![];
+
+        for couple in mating_pool {
+            let alpha = couple.first().unwrap();
+
+            let beta = couple.first().unwrap();
+
+            let alpha_task = &alpha.tasks;
+            let beta_task = &beta.tasks;
+
+            let mut rng = thread_rng();
+
+            let p = rng.gen_range(1..(alpha_task.len() - 1));
+
+            let (child_task, _) = alpha_task.split_at(p);
+
+            let mut child_task: Vec<String> = child_task.to_vec();
+
+            for x in beta_task.iter() {
+                if !child_task.contains(x) {
+                    child_task.push(x.to_string());
+                }
+                if child_task.len() == alpha_task.len() {
+                    break;
+                }
+            }
+            child_tasks.push(child_task);
+        }
+        child_tasks
     }
 
-    fn mutation(&self, child_tasks: Vec<Vec<String>>, mutation_rate: f32) -> Vec<Vec<String>> {
-        todo!()
+    fn mutation(&self, mut child_tasks: Vec<Vec<String>>, mutation_rate: f32) -> Vec<Vec<String>> {
+        let mut rng = thread_rng();
+        child_tasks.iter_mut().for_each(|child_task| {
+            if mutation_rate > rng.gen() {
+                let mut chosen_tasks = child_task.choose_multiple(&mut rng, 2).cloned();
+
+                // let task_a = chosen_tasks.next().unwrap();
+                let task_a = match chosen_tasks.next() {
+                    Some(arg) => arg,
+                    None => panic!("Wtf"),
+                };
+
+                let task_b = match chosen_tasks.next() {
+                    Some(arg) => arg,
+                    None => panic!("Wtf"),
+                };
+
+                let idx_a = child_task.iter().position(|x| *x == task_a).unwrap();
+                let idx_b = child_task.iter().position(|x| *x == task_b).unwrap();
+
+                child_task.swap(idx_a, idx_b);
+            }
+        });
+        child_tasks
     }
 
     fn init_population(&self, mut task_vec: Vec<Vec<String>>, clean_soln: &Solution) -> Population {
@@ -220,10 +296,14 @@ impl Optimizer {
                 if node == robot {
                     destination = home_depot;
                 }
-                let origin = match *path[idx - 1] {
-                    _ if (*node == *robot) => home_depot,
-                    _ => &path[idx - 1],
-                };
+                let mut origin = &path[idx - 1];
+                if origin == robot {
+                    origin = home_depot;
+                }
+                // let origin = match *path[idx - 1] {
+                //     _ if (*node == *robot) => home_depot,
+                //     _ => &path[idx - 1],
+                // };
                 if origin != node {
                     total_dist_cost += self.dist_utility[origin][destination];
                 }
